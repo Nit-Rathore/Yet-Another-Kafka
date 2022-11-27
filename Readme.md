@@ -5,4 +5,4 @@ Implementing our Kafka architecture from scratch.
 ### Nitish Rathore
 ### Vikas C
 ### Yashvardhan Soni
-### Yashas R 
+### Yashas R Kashyap
