@@ -34,7 +34,7 @@ if __name__ == '__main__':
 	cons1.connect()
 	message = 'consumer'
 	cons1.send(message)
-
+	print("Testing github stuff")
 	cons2 = consumer()
 	cons2.connect()
 	message = 'cons2 HELLO'
