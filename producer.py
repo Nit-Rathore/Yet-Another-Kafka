@@ -1,6 +1,6 @@
 import socket
 
-class consumer():
+class producer():
 	DEFAULT_CONFIG = {
 		'header': 64,
 		'port': 5050,
@@ -30,15 +30,17 @@ class consumer():
 
 
 if __name__ == '__main__':
-	cons1 = consumer()
-	cons1.connect()
-	message = 'consumer'
-	cons1.send(message)
-
-	cons2 = consumer()
-	cons2.connect()
-	message = 'cons2 HELLO'
-	cons2.send(message)
-
-	cons1.disconnect()
-	cons2.disconnect()
+    prod1 = producer()
+    prod1.connect()
+    message = 'producer'
+    prod1.send(message)
+    while True:
+        a=int(input("Enter 0 to exit, anything else to keep sending info: "))
+        if a == 0:
+            break
+        else:
+            msg = input("Enter topic: ")
+            prod1.send(msg)
+            msg2 = input("Enter info on topic: ")
+            prod1.send(msg2)
+    prod1.disconnect()

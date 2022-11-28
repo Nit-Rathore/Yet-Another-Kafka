@@ -13,21 +13,51 @@ server.bind(ADDR)
 
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
+    msg_length = conn.recv(HEADER).decode(FORMAT)
+    if msg_length:
+        msg_length = int(msg_length)
+        msg = conn.recv(msg_length).decode(FORMAT)
+        if msg == "producer":
+            print("Producer connected")
+            conn.send("Connected".encode(FORMAT))
+            connected = True
+            while connected:
+                msg_length = conn.recv(HEADER).decode(FORMAT)
+                if msg_length:
+                    msg_length = int(msg_length)
+                    msg = conn.recv(msg_length).decode(FORMAT)
+                    if msg == DISCONNECT_MESSAGE:
+                        connected = False
+                    print(f"[{addr}] {msg}")
+                    if msg == DISCONNECT_MESSAGE:
+                        conn.send("Disconnected".encode(FORMAT))
+                    else:
+                        conn.send("Msg received".encode(FORMAT))
 
-    connected = True
-    while connected:
-        msg_length = conn.recv(HEADER).decode(FORMAT)
-        if msg_length:
-            msg_length = int(msg_length)
-            msg = conn.recv(msg_length).decode(FORMAT)
-            if msg == DISCONNECT_MESSAGE:
-                connected = False
+        elif msg == "consumer":
+            print("Consumer connected")
+            conn.send("Connected".encode(FORMAT))
+            connected = True
+            while connected:
+                msg_length = conn.recv(HEADER).decode(FORMAT)
+                if msg_length:
+                    msg_length = int(msg_length)
+                    msg = conn.recv(msg_length).decode(FORMAT)
+                    if msg == DISCONNECT_MESSAGE:
+                        connected = False
+                    print(f"[{addr}] {msg}")
+                    if msg == DISCONNECT_MESSAGE:
+                        conn.send("Disconnected".encode(FORMAT))
+                    else:
+                        conn.send("Msg received".encode(FORMAT))
 
+        elif msg == DISCONNECT_MESSAGE:
             print(f"[{addr}] {msg}")
-            conn.send("Msg received".encode(FORMAT))
-
+            conn.send("Disconnected".encode(FORMAT))
+        else:
+            print("Wrong formatting of first message.")
+            conn.send("Incorrect first message. Disconnected.")
     conn.close()
-        
 
 def start():
     server.listen()
