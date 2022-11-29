@@ -1,8 +1,10 @@
-import socket 
+import socket
+import time
 import threading
 
 class Broker():
 	config = {
+		'id': 1,
 		'HEADER': 64,
 		'PORT': 9092,
 		'SERVER': "localhost",
@@ -16,23 +18,32 @@ class Broker():
 		'producer_conn': {}
 	}
 
-	def __init__(self, port=None) -> None:
+	def metadata_receive(self) -> None:
+		msg = self.zooclient.recv(2048).decode(self.config['FORMAT'])
+		self.metadata = eval(msg)
+		print(self.metadata)
+
+	def heartbeat(self) -> None:
+		threading.Timer(5.0, self.heartbeat).start()
+		msg = f"broker{self.config['id']} alive"
+		self.zooclient.send(msg.encode(self.config['FORMAT']))
+
+	def __init__(self, port, id) -> None:
+		self.config['id'] = id
 		self.config['PORT'] = int(port)
 		self.config['ADDR'] = (self.config['SERVER'], self.config['PORT'])
-		server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		server.bind(self.config['ADDR'])
-		zooclient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		zooclient.connect((self.config['SERVER'], 9090))
-
-		while True:
-			msg = zooclient.recv(2048).decode(self.config['FORMAT'])
-			print(eval(msg))
-			msg = input()
-			zooclient.send(msg.encode(self.config['FORMAT']))
-			if(msg == 'exit'):
-				break
+		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.server.bind(self.config['ADDR'])
+		self.zooclient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.zooclient.connect((self.config['SERVER'], 9090))
+		self.metadata_receive()
 		
-		zooclient.close()
+		self.heartbeat()
+
+		self.metadata_receive()
+
+
+
 
 
 	# def handle_client(conn, addr):
@@ -69,6 +80,7 @@ class Broker():
 
 if __name__ == '__main__':
 	port = int(input())
-	Brokerx = Broker(port)
+	id = int(input())
+	Brokerx = Broker(port, id)
 	# Broker2 = Broker(9093)
 	# Broker3 = Broker(9094)

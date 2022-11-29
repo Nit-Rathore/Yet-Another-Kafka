@@ -1,5 +1,6 @@
 import socket 
 import threading
+import time
 
 HEADER = 64
 PORT = 9090
@@ -31,19 +32,25 @@ metadata = {
     }
 }
 
-def handle_client(conn, addr):
-    print(f"[NEW CONNECTION] {addr} connected.")
+def metadata_transfer(conn, addr):
+    msg = str(metadata).encode(FORMAT)
+    conn.send(msg)
 
+def heartbeating(conn, addr):
     connected = True
     while connected:
-        msg = str(metadata).encode(FORMAT)
-        conn.send(msg)
+        msg = conn.recv(2048).decode(FORMAT)
+        print(msg)
 
-        acck = conn.recv(2048).decode(FORMAT)
-        if(acck == 'exit'):
-            break
+def handle_client(conn, addr):
+    print(f"[NEW CONNECTION] {addr} connected.")
+    metadata_transfer(conn, addr)
 
-    conn.close()
+    threading.Thread(target = heartbeating, args=(conn, addr)).start()
+
+    time.sleep(7)
+    metadata_transfer(conn,addr)
+
         
 
 def start():
