@@ -48,7 +48,7 @@ class producer():
 		ack = self.broker.recv(2048).decode(self.DEFAULT_CONFIG['format'])
 		print(ack)
 		self.broker.send(self.DEFAULT_CONFIG['disconnect_msg'])
-		
+
 		self.connect_zookeeper()
 		self.BROKER_CONFIG['port'] = 9092
 		self.BROKER_CONFIG['ADDR'] = (self.BROKER_CONFIG['server'], self.BROKER_CONFIG['port'])
@@ -57,7 +57,6 @@ class producer():
 	def disconnect(self):
 		self.send(self.DEFAULT_CONFIG['disconnect_msg'])
 		self.client.close()
-
 
 if __name__ == '__main__':
     prod = producer()
