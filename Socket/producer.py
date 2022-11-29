@@ -37,17 +37,22 @@ class producer():
 		self.data.update({'topic':topic,'content':content})
 		data_to_send=str(self.data).encode()
 		metadata = eval(self.zookeeper.recv(2048).decode(self.DEFAULT_CONFIG['format']))
-		for i in metadata['brokers']:
-			if(self.topic in i['leader_topics']):
-				self.BROKER_CONFIG['port'] = i['port']
+		print(metadata)
+		for i in metadata['brokers'].keys():
+			if(topic in metadata['brokers'][i]['leader_topics']):
+				self.BROKER_CONFIG['port'] = metadata['brokers'][i]['port']
 				self.BROKER_CONFIG['ADDR'] = (self.BROKER_CONFIG['server'], self.BROKER_CONFIG['port'])
+		print(self.BROKER_CONFIG)
 		self.zookeeper.close()
 		
-		self.connect_broker()
-		self.broker.sendall(data_to_send)
-		ack = self.broker.recv(2048).decode(self.DEFAULT_CONFIG['format'])
-		print(ack)
-		self.broker.close()
+		#self.connect_broker()
+		#self.broker.sendall(data_to_send)
+		# try:
+		# 	ack = self.broker.recv(2048).decode(self.DEFAULT_CONFIG['format'])
+		# 	print(ack)
+		# except:
+		# 	self.broker.sendall(data_to_send)
+		# self.broker.close()
 
 		self.connect_zookeeper()
 		self.BROKER_CONFIG['port'] = 9092
