@@ -41,13 +41,13 @@ class producer():
 			if(self.topic in i['leader_topics']):
 				self.BROKER_CONFIG['port'] = i['port']
 				self.BROKER_CONFIG['ADDR'] = (self.BROKER_CONFIG['server'], self.BROKER_CONFIG['port'])
-		self.zookeeper.send(self.DEFAULT_CONFIG['disconnect_msg'])
+		self.zookeeper.close()
 		
 		self.connect_broker()
 		self.broker.sendall(data_to_send)
 		ack = self.broker.recv(2048).decode(self.DEFAULT_CONFIG['format'])
 		print(ack)
-		self.broker.send(self.DEFAULT_CONFIG['disconnect_msg'])
+		self.broker.close()
 
 		self.connect_zookeeper()
 		self.BROKER_CONFIG['port'] = 9092
