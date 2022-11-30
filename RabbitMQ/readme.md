@@ -22,4 +22,4 @@ Everything just works (Thank God🥳)
 
 Improvements : Give it some cosmetic improvements , add comments so I dont forget what is what.
 
-## Oh no I forgot to add --from -beginning thing for consumer 😭
+## Oh no I forgot to add "--from -beginning" thing for consumer 😭
