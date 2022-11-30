@@ -1,6 +1,7 @@
 import socket 
 import threading
 import time
+import redis
 
 HEADER = 64
 PORT = 9090
@@ -8,6 +9,8 @@ SERVER = "localhost"
 ADDR = ('localhost', PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
+
+r = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 zooserver = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 zooserver.bind(ADDR)
@@ -31,6 +34,8 @@ metadata = {
         }
     }
 }
+
+r.set("metadata", str(metadata))
 
 def metadata_transfer(conn, addr):
     msg = str(metadata).encode(FORMAT)

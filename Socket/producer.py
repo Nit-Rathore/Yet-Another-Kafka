@@ -42,9 +42,10 @@ class producer():
 				self.BROKER_CONFIG['port'] = metadata['brokers'][i]['port']
 				self.BROKER_CONFIG['ADDR'] = (self.BROKER_CONFIG['server'], self.BROKER_CONFIG['port'])
 		print(self.BROKER_CONFIG)
-		
+		self.zookeeper.close()
+
 		self.connect_broker()
-		self.broker.sendall(data_to_send)
+		self.broker.send(data_to_send)
 		# try:
 		# except:
 		# 	self.broker.sendall(data_to_send)
@@ -59,13 +60,13 @@ class producer():
 		self.client.close()
 
 if __name__ == '__main__':
-    prod = producer()
-    prod.connect_zookeeper()
-    while True:
-        a=int(input("Enter 0 to exit, anything else to send content: "))
-        if a == 0:
-            break
-        else:
-            topic = input("Enter topic: ")
-            content = input("Enter content on topic: ")
-            prod.send(topic, content)
+	prod = producer()
+	while True:
+		a=int(input("Enter 0 to exit, anything else to send content: "))
+		if a == 0:
+			break
+		else:
+			topic = input("Enter topic: ")
+			content = input("Enter content on topic: ")
+			prod.connect_zookeeper()
+			prod.send(topic, [content])

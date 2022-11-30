@@ -29,7 +29,8 @@ class consumer():
 
 		if(flag == 1):
 			self.data['offset'] = 0
-			 	
+
+    	
 	def connect_broker(self):
 		self.broker_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.broker_client.connect(self.BROKER_CONFIG['ADDR'])
@@ -80,4 +81,4 @@ if __name__ == "__main__":
 
 	except:
 		pass
-	 	                                           
+	 	#cons1.connect_zookeeper()

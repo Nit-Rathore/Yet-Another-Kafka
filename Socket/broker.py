@@ -2,6 +2,7 @@ import socket
 import time
 import threading
 import os
+import redis
 
 class Broker():
 	config = {
@@ -13,16 +14,29 @@ class Broker():
 		'DISCONNECT_MESSAGE': "!DISCONNECT"
 	}
 	metadata = {
-		'id': 1,
-		'topics': {},
-		'consumer_conn': {},
-		'producer_conn': {}
+    	'topics': ['India','F1','FIFA','Cricket','Cottons'],
+    	'client_conn': {},
+    	'server_conn': {},
+    	'brokers': {
+        	'1': {
+            	'port': 9092,
+            	'leader_topics': ['India','F1','FIFA']
+        	},
+        	'2':{
+            	'port': 9093,
+            	'leader_topics': ['Cricket']            
+        	},
+        	'3': {
+            	'port': 9094,
+            	'leader_topics': ['Cottons']
+        	}
+    	}
 	}
 
 	def metadata_receive(self) -> None:
 		msg = self.zooclient.recv(2048).decode(self.config['FORMAT'])
-		self.metadata = eval(msg)
-		print(self.metadata)
+		# self.metadata = eval(msg)
+		# print(self.metadata)
 
 	def heartbeat(self) -> None:
 		threading.Timer(5.0, self.heartbeat).start()
@@ -39,11 +53,6 @@ class Broker():
 		self.zooclient.connect((self.config['SERVER'], 9090))
 		self.zooclient.send("broker".encode(self.config['FORMAT']))
 		self.metadata_receive()
-		for i in self.metadata['brokers']:
-			if self.metadata['brokers'][i]['port'] == int(port):
-				self.config['id']=int(i)
-				print(self.config['id'])
-				break
 		self.heartbeat()
 		self.server_start()
 
@@ -68,8 +77,11 @@ class Broker():
 		broker_path = f"broker_{self.config['id']}/{consumer_data['topic']}"
 		files = os.listdir(broker_path)
 		consumer_msg = ""
+		self.metadata = eval(r.get("metadata"))
 		if(consumer_data['topic'] not in self.metadata['topics']): 
 			os.makedirs(broker_path)
+			self.metadata['topics'].append(consumer_data['topic'])
+			self.metadata['brokers'][str(self.config['id'])]['leader_topics'].append(consumer_data['topic'])
 		if(consumer_data['offset']==-1): 
 			consumer_data['offset'] = len(os.listdir(broker_path))
 		while consumer_data['offset']<len(os.listdir(broker_path)):
@@ -78,55 +90,50 @@ class Broker():
 			with open(file_name,"r") as myFile:
 				consumer_msg += myFile.read()
 		consumer_topic_msg = str(tuple((consumer_data['topic'], consumer_msg)))
-		conn.send(consumer_topic_msg.encode(self.config['FORMAT'])) 
+		conn.send(consumer_topic_msg.encode(self.config['FORMAT']))
+
+		r.set("metadata", str(self.metadata))
 
 	def producer_recv(self,producer_data,conn,addr): 
-		print(self.metadata)
+		self.metadata = eval(r.get("metadata"))
+		broker_path = f"broker_{self.config['id']}/{producer_data['topic']}"
+		broker_path1 = broker_path[0:7] + '1' + broker_path[8:]
+		broker_path2 = broker_path[0:7] + '2' + broker_path[8:]
+		broker_path3 = broker_path[0:7] + '3' + broker_path[8:]
+
 		if(producer_data['topic'] not in self.metadata['topics']): 
-			broker_path = f"broker_{self.config['id']}/{producer_data['topic']}"
 			print("Dir created")
-			os.makedirs(broker_path)
+			os.makedirs(broker_path1)
+			os.makedirs(broker_path2)
+			os.makedirs(broker_path3)
 			self.metadata['topics'].append(producer_data['topic'])
-			self.metadata['brokers'][self.config['id']]['leader_topics'].append(producer_data['topic'])
-		else: 
-			broker_path = f"broker_{self.config['id']}/{producer_data['topic']}" 
-		#self.metadata_send()
+			self.metadata['brokers'][str(self.config['id'])]['leader_topics'].append(producer_data['topic'])
 
-	# def handle_client(conn, addr):
-	# 	print(f"[NEW CONNECTION] {addr} connected.")
+		data = (producer_data['topic'], producer_data['content'])
+		nfiles = len(os.listdir(broker_path))
+		len_data = len(data[1])
+		i = 0
+		while(len_data - 3 >= 0):
+			with open(f'{broker_path1}\{nfiles+1}.txt', 'w') as f:
+				f.write('\n'.join(data[1][i:i+3]))
+			with open(f'{broker_path2}\{nfiles+1}.txt', 'w') as f:
+				f.write('\n'.join(data[1][i:i+3]))
+			with open(f'{broker_path3}\{nfiles+1}.txt', 'w') as f:
+				f.write('\n'.join(data[1][i:i+3]))
+			i+=3
+			len_data-=3
+			nfiles += 1
+		if(len_data!=0):
+			with open(f'{broker_path1}\{nfiles+1}.txt','w') as f:
+				f.write('\n'.join(data[1][i:]))
+			with open(f'{broker_path2}\{nfiles+1}.txt','w') as f:
+				f.write('\n'.join(data[1][i:]))
+			with open(f'{broker_path3}\{nfiles+1}.txt','w') as f:
+				f.write('\n'.join(data[1][i:]))
 
-	# 	connected = True
-	# 	while connected:
-	# 		msg_length = conn.recv(HEADER).decode(FORMAT)
-	# 		if msg_length:
-	# 			msg_length = int(msg_length)
-	# 			msg = conn.recv(msg_length).decode(FORMAT)
-	# 			if msg == DISCONNECT_MESSAGE:
-	# 				connected = False
-
-	# 			print(f"[{addr}] {msg}")
-	# 			conn.send("Msg received".encode(FORMAT))
-
-	# 	conn.close()
-			
-
-	# def start():
-	# 	server.listen()
-	# 	print(f"[LISTENING] Server is listening on {SERVER}")
-	# 	while True:
-	# 		conn, addr = server.accept()
-	# 		thread = threading.Thread(target=handle_client, args=(conn, addr))
-	# 		thread.start()
-	# 		print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
-
-
-	# print("[STARTING] server is starting...")
-	# start()
-
+		r.set("metadata", str(self.metadata))
 
 if __name__ == '__main__':
-	port = int(input())
-	#id = int(input())
-	Brokerx = Broker(port)
-	# Broker2 = Broker(9093)
-	# Broker3 = Broker(9094)
+	r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+
+	Brokerx = Broker(9092)
