@@ -12,10 +12,8 @@ consume = connection.channel()
 qconsume = consume.queue_declare(queue='', exclusive=True)
 consume.exchange_declare(exchange='c', exchange_type=ExchangeType.direct)
 
-
-
 def on_broker_failure(broker_no):
-    print(f"Broker {broker_no} failed off bro")
+    print(f"Broker {broker_no}failed off bro")
     lino = json.loads(cli.get('leadership'))
     active_brokers = json.loads(cli.get('active_brokers'))
     active_brokers.remove(broker_no) 
@@ -30,10 +28,11 @@ def on_broker_failure(broker_no):
     broker_death_for_consumer()
 
 def keyboardInterruptHandler(signal, frame):
-    on_broker_failure(3)
+    on_broker_failure(2)
     exit(0)
 signal.signal(signal.SIGINT, keyboardInterruptHandler)   
-    
+
+
 
 
 channel = connection.channel()
@@ -53,10 +52,10 @@ def open_required_queues():
     for topic in lino:
         num_part = lino[topic][0]
         for i in range(1,num_part+1):
-            if(lino[topic][i]==3):
-                channel.queue_bind(exchange='routing', queue=queue.method.queue, routing_key=f'3/{topic}/partition{i}')   
+            if(lino[topic][i]==2):
+                channel.queue_bind(exchange='routing', queue=queue.method.queue, routing_key=f'2/{topic}/partition{i}')   
             else:
-                channel2.queue_bind(exchange='routing2', queue=queue2.method.queue, routing_key=f'3/{topic}/partition{i}')
+                channel2.queue_bind(exchange='routing2', queue=queue2.method.queue, routing_key=f'2/{topic}/partition{i}')
                 
                 
 
@@ -69,23 +68,47 @@ def on_message_received(ch, method, properties, body):
             print(f"Broker - received new message: {body}")
             os.makedirs(f'{method.routing_key}', exist_ok=True)
             f = open(f"{method.routing_key}/log.txt", "a")
-            f.write(str(body))
+            f.write(f'{body.decode()}\n')
             f.close() 
-            channel2.basic_publish(exchange='routing2', routing_key="1"+method.routing_key[1:], body=str(body))
-            channel2.basic_publish(exchange='routing2', routing_key="2"+method.routing_key[1:], body=str(body))
+            channel2.basic_publish(exchange='routing2', routing_key="3"+method.routing_key[1:], body=body)
+            channel2.basic_publish(exchange='routing2', routing_key="1"+method.routing_key[1:], body=body)
             topicName = ((method.routing_key[2:]).split('/'))[0]
-            if(topicName in json.loads(cli.get('consumed')) and 3 == json.loads(cli.get('consumed'))[topicName] ):
+            if(topicName in json.loads(cli.get('consumed')) and 2 == json.loads(cli.get('consumed'))[topicName] ):
+                consume.basic_publish(exchange='c',routing_key=topicName,body=body) 
                 consume.basic_publish(exchange='c',routing_key=topicName,body=body)
+                log = json.loads(cli.get('log'))
+                if(topicName in log.keys()):
+                    messages=log[topicName]
+                    messages.append(body.decode())
+                    log[topicName]=messages
+                    cli.set("log",json.dumps(log))
+                else:
+                    messages=[]
+                    messages.append(body.decode())
+                    log[topicName]=messages
+                    cli.set("log",json.dumps(log))
+            
+           
 
 def omr(ch, method, properties, body):
             os.makedirs(f'{method.routing_key}', exist_ok=True)
             f = open(f"{method.routing_key}/log.txt", "a")
-            f.write(str(body))
+            f.write(f'{body.decode()}\n')
             f.close() 
             topicName = ((method.routing_key[2:]).split('/'))[0]
-      
-            if(topicName in json.loads(cli.get('consumed')) and 3 == json.loads(cli.get('consumed'))[topicName] ):
-                consume.basic_publish(exchange='c',routing_key=topicName,body=body)
+            if(topicName in json.loads(cli.get('consumed')) and 2 == json.loads(cli.get('consumed'))[topicName] ):
+                consume.basic_publish(exchange='c',routing_key=topicName,body=body) 
+                log = json.loads(cli.get('log'))
+                if(topicName in log.keys()):
+                    messages=log[topicName]
+                    messages.append(body.decode())
+                    log[topicName]=messages
+                    cli.set("log",json.dumps(log))
+                else:
+                    messages=[]
+                    messages.append(body.decode())
+                    log[topicName]=messages
+                    cli.set("log",json.dumps(log))
 
 channel.basic_consume(queue=queue.method.queue, auto_ack=True,
     on_message_callback=on_message_received)
@@ -93,7 +116,7 @@ channel.basic_consume(queue=queue.method.queue, auto_ack=True,
 channel2.basic_consume(queue=queue2.method.queue, auto_ack=True,
     on_message_callback=omr)
 
-print("Broker 3 running")
+print("Broker 2 running")
 
 channel.start_consuming()
 channel2.start_consuming()

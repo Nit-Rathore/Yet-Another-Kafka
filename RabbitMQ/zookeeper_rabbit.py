@@ -51,10 +51,12 @@ if __name__ == "__main__":
     
     topic_leadership={}
     consumed={}
+    log = {}
     active_brokers = [1,2,3]
     e = json.dumps(active_brokers)
     cli = Redis('localhost')
     cli.set("consumed",json.dumps(consumed))
+    cli.set("log",json.dumps(log))
     cli.set('active_brokers',e)
     s = json.dumps(topic_leadership)
     cli.set('leadership',s)
