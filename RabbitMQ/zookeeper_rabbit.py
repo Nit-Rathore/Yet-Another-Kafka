@@ -35,11 +35,19 @@ def notify_brokers():
 if __name__ == "__main__":
     
     topic_leadership={}
+    active_brokers = [1,2,3]
+    e = json.dumps(active_brokers)
     cli = Redis('localhost')
+    cli.set('active_brokers',e)
     s = json.dumps(topic_leadership)
     cli.set('leadership',s)
     print("Zookeeper is Running")
+    
+    
+    
     while True: 
         topic_leadership = json.loads(cli.get('leadership'))
+        active_brokers = json.loads(cli.get('active_brokers'))
         print(topic_leadership)
+        print(active_brokers)
         sleep(5)
