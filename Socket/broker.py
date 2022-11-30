@@ -29,8 +29,8 @@ class Broker():
 		msg = f"broker{self.config['id']} is alive"
 		self.zooclient.send(msg.encode(self.config['FORMAT']))
 
-	def __init__(self, port, id) -> None:
-		self.config['id'] = id
+	def __init__(self, port) -> None:
+		#self.config['id'] = id
 		self.config['PORT'] = int(port)
 		self.config['ADDR'] = (self.config['SERVER'], self.config['PORT'])
 		self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,7 +39,11 @@ class Broker():
 		self.zooclient.connect((self.config['SERVER'], 9090))
 		self.zooclient.send("broker".encode(self.config['FORMAT']))
 		self.metadata_receive()
-		
+		for i in self.metadata['brokers']:
+			if self.metadata['brokers'][i]['port'] == int(port):
+				self.config['id']=int(i)
+				print(self.config['id'])
+				break
 		self.heartbeat()
 		self.server_start()
 
@@ -57,7 +61,8 @@ class Broker():
 		if(client_data['type'] == 'Consumer'): 
 			print(client_data)
 			self.consumer_send(client_data,conn,addr)
-
+		elif(client_data['type'] == 'Producer'):
+			self.producer_recv(client_data,conn,addr)
 
 	def consumer_send(self,consumer_data,conn,addr): 
 		broker_path = f"broker_{self.config['id']}/{consumer_data['topic']}"
@@ -73,9 +78,19 @@ class Broker():
 			with open(file_name,"r") as myFile:
 				consumer_msg += myFile.read()
 		consumer_topic_msg = str(tuple((consumer_data['topic'], consumer_msg)))
-		conn.send(consumer_topic_msg.encode(self.config['FORMAT']))
+		conn.send(consumer_topic_msg.encode(self.config['FORMAT'])) 
 
-
+	def producer_recv(self,producer_data,conn,addr): 
+		print(self.metadata)
+		if(producer_data['topic'] not in self.metadata['topics']): 
+			broker_path = f"broker_{self.config['id']}/{producer_data['topic']}"
+			print("Dir created")
+			os.makedirs(broker_path)
+			self.metadata['topics'].append(producer_data['topic'])
+			self.metadata['brokers'][self.config['id']]['leader_topics'].append(producer_data['topic'])
+		else: 
+			broker_path = f"broker_{self.config['id']}/{producer_data['topic']}" 
+		#self.metadata_send()
 
 	# def handle_client(conn, addr):
 	# 	print(f"[NEW CONNECTION] {addr} connected.")
@@ -111,7 +126,7 @@ class Broker():
 
 if __name__ == '__main__':
 	port = int(input())
-	id = int(input())
-	Brokerx = Broker(port, id)
+	#id = int(input())
+	Brokerx = Broker(port)
 	# Broker2 = Broker(9093)
 	# Broker3 = Broker(9094)

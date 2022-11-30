@@ -36,6 +36,11 @@ def metadata_transfer(conn, addr):
     msg = str(metadata).encode(FORMAT)
     conn.send(msg)
 
+def metadata_recv(self, conn, addr):
+    msg = eval(conn.recv(2048).decode(FORMAT))
+    self.metadata.update(msg)
+    print(self.metadata)
+
 def heartbeating(conn, addr):
     connected = True
     while connected:

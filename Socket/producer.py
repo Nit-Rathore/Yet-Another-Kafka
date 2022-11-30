@@ -18,11 +18,8 @@ class producer():
 	}
 	BROKER_CONFIG['ADDR'] = (BROKER_CONFIG['server'], BROKER_CONFIG['port'])
 
-	def __init__(self,port=None,topic=None,content=None):
-		self.port = port
-		self.topic = topic
-		self.content = content
-
+	def __init__(self):
+		pass
 	def connect_broker(self):
 		self.broker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.broker.connect(self.BROKER_CONFIG['ADDR'])
@@ -33,9 +30,11 @@ class producer():
 		self.zookeeper.connect(self.DEFAULT_CONFIG['ADDR'])
 		print("Zookeeper connection established")
 
+
 	def send(self, topic, content):
 		self.data.update({'topic':topic,'content':content})
 		data_to_send=str(self.data).encode()
+		self.zookeeper.send(str(self.data['type']).encode('utf-8'))
 		metadata = eval(self.zookeeper.recv(2048).decode(self.DEFAULT_CONFIG['format']))
 		print(metadata)
 		for i in metadata['brokers'].keys():
@@ -43,18 +42,14 @@ class producer():
 				self.BROKER_CONFIG['port'] = metadata['brokers'][i]['port']
 				self.BROKER_CONFIG['ADDR'] = (self.BROKER_CONFIG['server'], self.BROKER_CONFIG['port'])
 		print(self.BROKER_CONFIG)
-		self.zookeeper.close()
 		
-		#self.connect_broker()
-		#self.broker.sendall(data_to_send)
+		self.connect_broker()
+		self.broker.sendall(data_to_send)
 		# try:
-		# 	ack = self.broker.recv(2048).decode(self.DEFAULT_CONFIG['format'])
-		# 	print(ack)
 		# except:
 		# 	self.broker.sendall(data_to_send)
-		# self.broker.close()
-
-		self.connect_zookeeper()
+		self.broker.close()
+		print("Broker connection closed")
 		self.BROKER_CONFIG['port'] = 9092
 		self.BROKER_CONFIG['ADDR'] = (self.BROKER_CONFIG['server'], self.BROKER_CONFIG['port'])
 		
