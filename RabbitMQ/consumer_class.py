@@ -12,19 +12,21 @@ class consumer():
        connection_parameters = pika.ConnectionParameters('localhost')
        connection = pika.BlockingConnection(connection_parameters)
        channel = connection.channel()
-       channel.exchange_declare(exchange='c', exchange_type=ExchangeType.direct)
        queue = channel.queue_declare(queue='', exclusive=True)
+       channel.exchange_declare(exchange='c', exchange_type=ExchangeType.direct)
+       
        return connection,channel,queue
    
     def subcribeTopic(topicName,channel,queue,fromBeginning):
        if(not fromBeginning):
+         def omr(ch, method, properties, body):
+            print(f'Recieved {body}')
          actively_consumed_topics(topicName)
          channel.queue_bind(exchange='c',queue=queue.method.queue,routing_key=f'{topicName}')
+         channel.basic_consume(queue=queue.method.queue, auto_ack=True,on_message_callback=omr)
+         print(f"Subscribed to {topicName}")
        
-    def start_consume(topicName,channel,queue2):
-       def omr(ch, method, properties, body):
-          print(f'Recieved {body}')
-       routing_queue_name = f'{topicName}'
-       channel.basic_consume(queue=queue2.method.queue, auto_ack=True,on_message_callback=omr)
-       print("Waiting for Messages")
-       channel.start_consuming()
+
+       
+
+       

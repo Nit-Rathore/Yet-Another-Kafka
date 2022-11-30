@@ -4,9 +4,18 @@ import os,signal,random
 from redis import Redis
 import json
 cli = Redis('localhost')
-from zookeeper_rabbit import notify_brokers
+from zookeeper_rabbit import notify_brokers,broker_death_for_consumer
+
+connection_parameters = pika.ConnectionParameters('localhost')
+connection = pika.BlockingConnection(connection_parameters)
+consume = connection.channel()
+qconsume = consume.queue_declare(queue='', exclusive=True)
+consume.exchange_declare(exchange='c', exchange_type=ExchangeType.direct)
+
+
+
 def on_broker_failure(broker_no):
-    print(f"Broker {broker_no}failed off bro")
+    print(f"Broker {broker_no} failed off bro")
     lino = json.loads(cli.get('leadership'))
     active_brokers = json.loads(cli.get('active_brokers'))
     active_brokers.remove(broker_no) 
@@ -18,6 +27,7 @@ def on_broker_failure(broker_no):
     cli.set('leadership',json.dumps(lino))
     cli.set('active_brokers',json.dumps(active_brokers))
     notify_brokers()
+    broker_death_for_consumer()
 
 def keyboardInterruptHandler(signal, frame):
     on_broker_failure(3)
@@ -25,8 +35,6 @@ def keyboardInterruptHandler(signal, frame):
 signal.signal(signal.SIGINT, keyboardInterruptHandler)   
     
 
-connection_parameters = pika.ConnectionParameters('localhost')
-connection = pika.BlockingConnection(connection_parameters)
 
 channel = connection.channel()
 queue = channel.queue_declare(queue='', exclusive=True)
@@ -65,13 +73,19 @@ def on_message_received(ch, method, properties, body):
             f.close() 
             channel2.basic_publish(exchange='routing2', routing_key="1"+method.routing_key[1:], body=str(body))
             channel2.basic_publish(exchange='routing2', routing_key="2"+method.routing_key[1:], body=str(body))
-        
+            topicName = ((method.routing_key[2:]).split('/'))[0]
+            if(topicName in json.loads(cli.get('consumed')) and 3 == json.loads(cli.get('consumed'))[topicName] ):
+                consume.basic_publish(exchange='c',routing_key=topicName,body=body)
 
 def omr(ch, method, properties, body):
             os.makedirs(f'{method.routing_key}', exist_ok=True)
             f = open(f"{method.routing_key}/log.txt", "a")
             f.write(str(body))
             f.close() 
+            topicName = ((method.routing_key[2:]).split('/'))[0]
+      
+            if(topicName in json.loads(cli.get('consumed')) and 3 == json.loads(cli.get('consumed'))[topicName] ):
+                consume.basic_publish(exchange='c',routing_key=topicName,body=body)
 
 channel.basic_consume(queue=queue.method.queue, auto_ack=True,
     on_message_callback=on_message_received)
