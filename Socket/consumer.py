@@ -61,7 +61,7 @@ class consumer():
 		print("Message received from broker...")
 		message = eval(self.broker_client.recv(18432).decode(self.DEFAULT_CONFIG['format']))
 		print(message) 
-		self.client.send("Message recieved from leader broker".encode())
+		#self.client.send("Message recieved from leader broker".encode())
 
 
 	def disconnect(self):
@@ -76,7 +76,8 @@ if __name__ == "__main__":
 	cons1.connect_zookeeper()
 	try:
 		cons1.connect_broker()
-		cons1.send_recieve()
+		while True:
+			cons1.send_recieve()
 	# 	cons1.disconnect()
 
 	except:

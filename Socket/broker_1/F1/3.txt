@@ -1,1 +1,5 @@
+<<<<<<< Updated upstream
 jingalaal
+=======
+i am racist
+>>>>>>> Stashed changes

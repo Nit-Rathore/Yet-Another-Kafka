@@ -3,6 +3,7 @@ import threading
 import time
 import redis
 
+
 HEADER = 64
 PORT = 9090
 SERVER = "localhost"
@@ -55,10 +56,13 @@ def heartbeating(conn, addr):
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
     type = conn.recv(2048).decode(FORMAT)
-    metadata_transfer(conn, addr)
     print(type)
     if(type == "broker"):
+        metadata_transfer(conn, addr)
         threading.Thread(target = heartbeating, args=(conn, addr)).start()
+    else:
+        metadata_transfer(conn,addr)
+        #conn.close()
 
         
 

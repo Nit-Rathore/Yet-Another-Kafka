@@ -32,11 +32,11 @@ class Broker():
         	}
     	}
 	}
-
+	consumer_conns = []
 	def metadata_receive(self) -> None:
 		msg = self.zooclient.recv(2048).decode(self.config['FORMAT'])
-		# self.metadata = eval(msg)
-		# print(self.metadata)
+		#self.metadata = eval(msg)
+		#print(self.metadata)
 
 	def heartbeat(self) -> None:
 		threading.Timer(5.0, self.heartbeat).start()
@@ -53,6 +53,7 @@ class Broker():
 		self.zooclient.connect((self.config['SERVER'], 9090))
 		self.zooclient.send("broker".encode(self.config['FORMAT']))
 		self.metadata_receive()
+		
 		self.heartbeat()
 		self.server_start()
 
@@ -69,26 +70,36 @@ class Broker():
 		client_data = eval(conn.recv(2048).decode()) 
 		if(client_data['type'] == 'Consumer'): 
 			print(client_data)
+			self.consumer_conns.append([client_data,conn,addr])
 			self.consumer_send(client_data,conn,addr)
 		elif(client_data['type'] == 'Producer'):
 			self.producer_recv(client_data,conn,addr)
-
+			for i in self.consumer_conns:
+				if(i[0]['topic'] == client_data['topic']):
+					self.consumer_send(i[0],i[1],i[2])
+					
 	def consumer_send(self,consumer_data,conn,addr): 
 		broker_path = f"broker_{self.config['id']}/{consumer_data['topic']}"
-		files = os.listdir(broker_path)
+		broker_path1 = broker_path[0:7] + '1' + broker_path[8:]
+		broker_path2 = broker_path[0:7] + '2' + broker_path[8:]
+		broker_path3 = broker_path[0:7] + '3' + broker_path[8:]
+		
 		consumer_msg = ""
 		self.metadata = eval(r.get("metadata"))
 		if(consumer_data['topic'] not in self.metadata['topics']): 
-			os.makedirs(broker_path)
+			os.makedirs(broker_path1)
+			os.makedirs(broker_path2)
+			os.makedirs(broker_path3)
 			self.metadata['topics'].append(consumer_data['topic'])
 			self.metadata['brokers'][str(self.config['id'])]['leader_topics'].append(consumer_data['topic'])
+		files = os.listdir(broker_path)
 		if(consumer_data['offset']==-1): 
 			consumer_data['offset'] = len(os.listdir(broker_path))
 		while consumer_data['offset']<len(os.listdir(broker_path)):
 			consumer_data['offset'] += 1
 			file_name = os.path.join(broker_path, files[consumer_data['offset']-1])
 			with open(file_name,"r") as myFile:
-				consumer_msg += myFile.read()
+				consumer_msg += myFile.read()+'| '
 		consumer_topic_msg = str(tuple((consumer_data['topic'], consumer_msg)))
 		conn.send(consumer_topic_msg.encode(self.config['FORMAT']))
 
