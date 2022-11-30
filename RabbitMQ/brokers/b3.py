@@ -4,7 +4,7 @@ import os,signal,random
 from redis import Redis
 import json
 cli = Redis('localhost')
-from zookeeper_rabbit import notify_brokers
+from zookeeper_rabbit import notify_brokers,broker_death_for_consumer
 
 connection_parameters = pika.ConnectionParameters('localhost')
 connection = pika.BlockingConnection(connection_parameters)
@@ -27,6 +27,7 @@ def on_broker_failure(broker_no):
     cli.set('leadership',json.dumps(lino))
     cli.set('active_brokers',json.dumps(active_brokers))
     notify_brokers()
+    broker_death_for_consumer()
 
 def keyboardInterruptHandler(signal, frame):
     on_broker_failure(3)

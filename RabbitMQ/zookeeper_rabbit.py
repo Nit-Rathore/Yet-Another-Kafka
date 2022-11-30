@@ -21,7 +21,14 @@ def set_leader(topicName,num_part):
 def actively_consumed_topics(topicName):
     active_brokers = json.loads(cli.get('active_brokers'))
     consumed=json.loads(cli.get('consumed'))
-    if(topicName not in consumed.keys()):
+    if(topicName not in consumed.keys() ):
+        consumed[topicName]=random.choice(active_brokers)
+    cli.set('consumed',json.dumps(consumed))
+    
+def broker_death_for_consumer():
+    active_brokers = json.loads(cli.get('active_brokers'))
+    consumed=json.loads(cli.get('consumed'))
+    for topicName in consumed.keys():
         consumed[topicName]=random.choice(active_brokers)
     cli.set('consumed',json.dumps(consumed))
 
@@ -38,6 +45,7 @@ def notify_brokers():
     channel = connection.channel()
     channel.exchange_declare(exchange='routing', exchange_type=ExchangeType.direct)
     channel.basic_publish(exchange='routing',routing_key='zookeeper',body="update your queues !")
+    
 
 if __name__ == "__main__":
     
