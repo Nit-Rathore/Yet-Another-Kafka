@@ -13,21 +13,21 @@ zooserver = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 zooserver.bind(ADDR)
 
 metadata = {
-    'topics': {},
+    'topics': ['India','F1','FIFA','Cricket','Cottons'],
     'client_conn': {},
     'server_conn': {},
     'brokers': {
         '1': {
             'port': 9092,
-            'leader_topics': []
+            'leader_topics': ['India','F1','FIFA']
         },
         '2':{
             'port': 9093,
-            'leader_topics': []            
+            'leader_topics': ['Cricket']            
         },
         '3': {
             'port': 9094,
-            'leader_topics': []
+            'leader_topics': ['Cottons']
         }
     }
 }
@@ -44,12 +44,11 @@ def heartbeating(conn, addr):
 
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected.")
+    type = conn.recv(2048).decode(FORMAT)
     metadata_transfer(conn, addr)
-
-    threading.Thread(target = heartbeating, args=(conn, addr)).start()
-
-    time.sleep(7)
-    metadata_transfer(conn,addr)
+    print(type)
+    if(type == "broker"):
+        threading.Thread(target = heartbeating, args=(conn, addr)).start()
 
         
 

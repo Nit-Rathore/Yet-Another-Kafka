@@ -1,6 +1,7 @@
 import socket
 import time
 import threading
+import os
 
 class Broker():
 	config = {
@@ -25,7 +26,7 @@ class Broker():
 
 	def heartbeat(self) -> None:
 		threading.Timer(5.0, self.heartbeat).start()
-		msg = f"broker{self.config['id']} alive"
+		msg = f"broker{self.config['id']} is alive"
 		self.zooclient.send(msg.encode(self.config['FORMAT']))
 
 	def __init__(self, port, id) -> None:
@@ -36,13 +37,43 @@ class Broker():
 		self.server.bind(self.config['ADDR'])
 		self.zooclient = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.zooclient.connect((self.config['SERVER'], 9090))
+		self.zooclient.send("broker".encode(self.config['FORMAT']))
 		self.metadata_receive()
 		
 		self.heartbeat()
+		self.server_start()
 
-		self.metadata_receive()
+	def server_start(self): 
+		self.server.listen()
+		print(f"[LISTENING] Server is listening on {self.config['SERVER']}") 
+		while True:
+			conn,addr = self.server.accept()
+			thread = threading.Thread(target=self.handle_client,args = (conn,addr))
+			thread.start()
+	
+	def handle_client(self,conn,addr): 
+		print(f"[NEW CONNECTION] {addr} connected.")
+		client_data = eval(conn.recv(2048).decode()) 
+		if(client_data['type'] == 'Consumer'): 
+			print(client_data)
+			self.consumer_send(client_data,conn,addr)
 
 
+	def consumer_send(self,consumer_data,conn,addr): 
+		broker_path = f"broker_{self.config['id']}/{consumer_data['topic']}"
+		files = os.listdir(broker_path)
+		consumer_msg = ""
+		if(consumer_data['topic'] not in self.metadata['topics']): 
+			os.makedirs(broker_path)
+		if(consumer_data['offset']==-1): 
+			consumer_data['offset'] = len(os.listdir(broker_path))
+		while consumer_data['offset']<len(os.listdir(broker_path)):
+			consumer_data['offset'] += 1
+			file_name = os.path.join(broker_path, files[consumer_data['offset']-1])
+			with open(file_name,"r") as myFile:
+				consumer_msg += myFile.read()
+		consumer_topic_msg = str(tuple((consumer_data['topic'], consumer_msg)))
+		conn.send(consumer_topic_msg.encode(self.config['FORMAT']))
 
 
 
