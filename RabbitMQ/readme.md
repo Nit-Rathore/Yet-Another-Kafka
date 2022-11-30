@@ -1,4 +1,4 @@
-# Implemented Using RabbitMQ , Redis and Python
+# 🐰 Implemented Using RabbitMQ , Redis and Python 🫡
 
 What does it do ?
 
