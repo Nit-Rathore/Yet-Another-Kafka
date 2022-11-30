@@ -3,7 +3,7 @@ import os
 from time import sleep
 from pika.exchange_type import ExchangeType
 from redis import Redis
-import json
+import json,random
 cli = Redis('localhost')
 
 def set_leader(topicName,num_part):
@@ -12,13 +12,20 @@ def set_leader(topicName,num_part):
     leader_array.append(num_part)
     top=1
     for i in range(1,num_part+1):
-        leader_array.append(top%3+1)
+        leader_array.append((top)%3+1)
         top+=1
     topic_leadership[topicName]=leader_array
     cli.set('leadership',json.dumps(topic_leadership))
     notify_brokers()
 
+def actively_consumed_topics(topicName):
+    active_brokers = json.loads(cli.get('active_brokers'))
+    consumed=json.loads(cli.get('consumed'))
+    if(topicName not in consumed.keys()):
+        consumed[topicName]=random.choice(active_brokers)
+    cli.set('consumed',json.dumps(consumed))
 
+    
 def get_leader(topicName,key):
     topic_leadership = json.loads(cli.get('leadership')) 
     num_part= topic_leadership[topicName][0]
@@ -35,9 +42,11 @@ def notify_brokers():
 if __name__ == "__main__":
     
     topic_leadership={}
+    consumed={}
     active_brokers = [1,2,3]
     e = json.dumps(active_brokers)
     cli = Redis('localhost')
+    cli.set("consumed",json.dumps(consumed))
     cli.set('active_brokers',e)
     s = json.dumps(topic_leadership)
     cli.set('leadership',s)
