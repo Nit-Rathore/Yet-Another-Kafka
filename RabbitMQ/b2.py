@@ -1,9 +1,32 @@
 import pika
 from pika.exchange_type import ExchangeType
-import os
+import os,signal,random
 from redis import Redis
 import json
 cli = Redis('localhost')
+from zookeeper_rabbit import notify_brokers
+
+def on_broker_failure(broker_no):
+    print(f"Broker {broker_no}failed off bro")
+    lino = json.loads(cli.get('leadership'))
+    active_brokers = json.loads(cli.get('active_brokers'))
+    active_brokers.remove(broker_no) 
+    for topic in lino:
+        num_part = lino[topic][0]
+        for i in range(1,num_part+1):
+            if(lino[topic][i]==broker_no):
+                lino[topic][i]=random.choice(active_brokers)
+    cli.set('leadership',json.dumps(lino))
+    cli.set('active_brokers',json.dumps(active_brokers))
+    notify_brokers()
+
+def keyboardInterruptHandler(signal, frame):
+    on_broker_failure(2)
+    exit(0)
+signal.signal(signal.SIGINT, keyboardInterruptHandler)   
+
+
+
 connection_parameters = pika.ConnectionParameters('localhost')
 connection = pika.BlockingConnection(connection_parameters)
 
