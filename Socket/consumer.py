@@ -3,6 +3,7 @@
 import socket
 import threading 
 import sys
+import time
 
 class consumer():
 	DEFAULT_CONFIG = {
@@ -59,8 +60,14 @@ class consumer():
 
 	def send_recieve(self):  ##To send the broker my data received from user and receive data from broker accordingly...
 		print("Message received from broker...")
-		message = eval(self.broker_client.recv(18432).decode(self.DEFAULT_CONFIG['format']))
-		print(message) 
+		try:
+			message = eval(self.broker_client.recv(18432).decode(self.DEFAULT_CONFIG['format']))
+			print(message) 
+		except Exception as e:
+			print("Broker connection failed waiting 15s then connecting to zookeeper to get metadata")
+			time.sleep(15)
+			cons1.connect_zookeeper()
+			cons1.connect_broker()
 		#self.client.send("Message recieved from leader broker".encode())
 
 

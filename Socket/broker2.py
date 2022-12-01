@@ -6,9 +6,9 @@ import redis
 
 class Broker():
 	config = {
-		'id': 1,
+		'id': 2,
 		'HEADER': 64,
-		'PORT': 9092,
+		'PORT': 9093,
 		'SERVER': "localhost",
 		'FORMAT': 'utf-8',
 		'DISCONNECT_MESSAGE': "!DISCONNECT"
@@ -147,4 +147,4 @@ class Broker():
 if __name__ == '__main__':
 	r = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
-	Brokerx = Broker(9092)
+	Brokerx = Broker(9093)
