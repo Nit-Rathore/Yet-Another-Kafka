@@ -8,5 +8,5 @@ Implementing our Kafka architecture from scratch.
 # Teammates:
 ### Nitish Rathore
 ### Vikas C
-### Yashvardhan Soni
+### Yash Vardhan Soni
 ### Yashas R Kashyap
