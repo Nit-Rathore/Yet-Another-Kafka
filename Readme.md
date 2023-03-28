@@ -9,4 +9,4 @@ Implementing our Kafka architecture from scratch.
 ### Nitish Rathore
 ### Vikas C
 ### Yash Vardhan Soni
-### Yashas R Kashyap
+### Yashas R Kashyap (Rabbit MQ Full)
